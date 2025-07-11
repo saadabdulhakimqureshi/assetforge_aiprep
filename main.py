@@ -1,16 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status, FastAPI
+from together import Together
 from models.request_model import ProjectContext
-from services.ai_agent import generate_recommendations
+# from open_ai_services.ai_agent import generate_recommendations
+from together_ai_services.asset_recommendation_agent import AssetRecommendationAgent
 from dotenv import load_dotenv
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+client = Together(api_key=TOGETHER_API_KEY)
+
 security = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.scheme != "Bearer" or credentials.credentials != OPENAI_API_KEY:
+    if credentials.scheme != "Bearer" or credentials.credentials != TOGETHER_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing Bearer token",
@@ -28,7 +33,8 @@ async def recommend_assets(
         credentials: HTTPAuthorizationCredentials = Depends(verify_token)
     ):
     try:
-        result = await generate_recommendations(context)
+        agent = AssetRecommendationAgent(client=client)
+        result = await agent.run(context)
         return {"recomendations": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
