@@ -1,40 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, status, FastAPI
-from together import Together
-from models.request_model import ProjectContext
-# from open_ai_services.ai_agent import generate_recommendations
-from together_ai_services.asset_recommendation_agent import AssetRecommendationAgent
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 
 load_dotenv()
 
-TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-client = Together(api_key=TOGETHER_API_KEY)
+app = FastAPI(title="AssetForge AI Prep API", version="0.0.1")
 
-security = HTTPBearer()
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY"),
+)
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    if credentials.scheme != "Bearer" or credentials.credentials != TOGETHER_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing Bearer token",
-        )
-
-app = FastAPI(title="AssetForge AI Backend")
-
-@app.get("/")
-def read_root(credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-    return {"message": "AssetForge OpenAI is live"}
-    
-@app.post("/recommend")
-async def recommend_assets(
-        context: ProjectContext,
-        credentials: HTTPAuthorizationCredentials = Depends(verify_token)
-    ):
-    try:
-        agent = AssetRecommendationAgent(client=client)
-        result = await agent.run(context)
-        return {"recomendations": result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
