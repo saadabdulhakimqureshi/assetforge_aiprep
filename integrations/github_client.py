@@ -22,3 +22,11 @@ async def get_user_info(token: str) -> dict:
         )
         return response.json()
     
+async def get_user_repos(token: str) -> list:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{GITHUB_API}/user/repos",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+            params={"sort": "updated", "per_page": 50}
+        )
+        return response.json()

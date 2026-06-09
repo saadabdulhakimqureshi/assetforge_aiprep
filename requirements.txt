@@ -8,5 +8,7 @@ langchain==0.3.25
 langchain-together==0.2.0
 langchain-core==0.3.55
 aiosqlite==0.20.0
+sqlmodel==0.0.21
+sqlalchemy[asyncio]==2.0.36
 
 # run: uvicorn main:app --reload --port 8000

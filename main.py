@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from database import init_db
 import os
+from routers import auth, repos, analyze, feedback
 
 load_dotenv()
 
@@ -13,9 +14,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
-
+# app create
 app = FastAPI(title="AssetForge AI Prep API", version="0.0.1", lifespan=lifespan)
 
+# middlewares
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET_KEY"),
@@ -28,3 +30,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# routers
+app.include_router(auth.router)
+app.include_router(repos.router)
+app.include_router(analyze.router)
+app.include_router(feedback.router)

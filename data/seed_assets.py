@@ -1,11 +1,11 @@
 import asyncio
-import aiosqlite
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from database import DB_PATH
+from database import init_db, AsyncSessionLocal
+from repositories.models import Asset
 
 ASSETS = [
     # ── CHARACTERS (15) ──────────────────────────────────────────────────────
@@ -1123,27 +1123,23 @@ ASSETS = [
 
 
 async def seed():
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.executemany(
-            """INSERT OR IGNORE INTO assets
-               (id, name, category, source, license, url, thumbnail_url, tags, description)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            [
-                (
-                    a["id"],
-                    a["name"],
-                    a["category"],
-                    a["source"],
-                    a["license"],
-                    a["url"],
-                    a.get("thumbnail_url"),
-                    json.dumps(a.get("tags", [])),
-                    a.get("description"),
-                )
-                for a in ASSETS
-            ],
-        )
-        await db.commit()
+    await init_db()
+    async with AsyncSessionLocal() as session:
+        for a in ASSETS:
+            existing = await session.get(Asset, a["id"])
+            if not existing:
+                session.add(Asset(
+                    id=a["id"],
+                    name=a["name"],
+                    category=a["category"],
+                    source=a["source"],
+                    license=a["license"],
+                    url=a["url"],
+                    thumbnail_url=a.get("thumbnail_url"),
+                    tags=json.dumps(a.get("tags", [])),
+                    description=a.get("description"),
+                ))
+        await session.commit()
         print(f"Seeded {len(ASSETS)} assets.")
 
 
