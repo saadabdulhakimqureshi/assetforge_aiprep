@@ -42,10 +42,10 @@ class ReadWriteRepo(ReadRepo):
 
     async def update(self, instance: SQLModel) -> SQLModel:
         async with self.session_factory() as session:
-            session.add(instance)
+            db_instance = await session.merge(instance)
             await session.commit()
-            await session.refresh(instance)
-            return instance
+            await session.refresh(db_instance)
+            return db_instance
 
     async def delete(self, instance: SQLModel) -> None:
         async with self.session_factory() as session:
